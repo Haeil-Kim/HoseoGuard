@@ -1,4 +1,4 @@
-const express = require("express");
+const const express = require("express");
 const app = express();
 const cors = require("cors");
 const mysql = require("mysql2/promise"); //DB연동1
@@ -98,12 +98,14 @@ app.get("/equip/list", async (req, res) => {
     res.json(data);
     res.status(201).send();
     res.end();
+    return;
   } catch (err) {
     res.status(400).json({
       message: "error"
     });
     console.log(err)
     res.end();
+    return;
   }
 });//소화기 리스트 조회
 app.get("/equip/list_sax", async (req, res) => {
@@ -116,11 +118,13 @@ app.get("/equip/list_sax", async (req, res) => {
     const where1 = where[0];
     res.json(where1);
     res.status(201).send();
+    return;
   } catch (err) {
     res.status(400).json({
       message: "error"
     });
     console.log(err);
+    return;
   }
 });//소화기 리스트 조회
 app.get("/equip/list_m", async (req, res) => {
@@ -164,28 +168,31 @@ app.get("/equip/list_m", async (req, res) => {
     console.log(err)
   }
 });
-app.post("/check/insert", async (req, res) => {
-  const serial = req.body['serial'];
-  const prs = req.body['prs'];
-  const user = req.body['user'];
-  console.log("/check/insert")
-  try {
-    const connection = await DB.getConnection();
-    const insert = await connection.query(
-      "SELECT id FROM Equip_info WHERE serial= ?;", [serial]);
-    const where = insert[0][0]['id'];
-    const insert1 = await connection.query(
-      "INSERT INTO Check_Log(equip_id,date,user,prs) VALUES(?,now(),?,?);", [where, user, prs]
-    );
-    res.status(201).json({
-      message: "Success"
-    });
-  } catch (err) {
-    res.status(400).json({
-      message: err,
-    });
-  }
-});
+// app.post("/check/insert", async (req, res) => {
+//   const serial = req.body['serial'];
+//   const prs = req.body['prs'];
+//   const user = req.body['user'];
+//   const res_ = req.body['check_res'];
+//   console.log("/check/insert")
+//   console.log(res_)
+//   console.log("\n\n\n\n");
+//   try {
+//     const connection = await DB.getConnection();
+//     const insert = await connection.query(
+//       "SELECT id FROM Equip_info WHERE serial= ?;", [serial]);
+//     const where = insert[0][0]['id'];
+//     const insert1 = await connection.query(
+//       "INSERT INTO Check_Log(equip_id,date,check_res,user,prs) VALUES(?,now(),?,?,?);", [where, res_, user, prs]
+//     );
+//     res.status(201).json({
+//       message: "Success"
+//     });
+//   } catch (err) {
+//     res.status(400).json({
+//       message: err,
+//     });
+//   }
+// });
 app.post("/equip/pressure", async (req, res) => {
   const serial = req.body["serial"];
   const pressure = req.body["prs"];
@@ -219,7 +226,32 @@ app.post("/equip/pressure", async (req, res) => {
     console.log(err);
   }
 });//소화기 점검 여부 초기화 및 특정소화기 리스트 조회 
-app.post("/equip/insert", async (req, res) => {
+app.post("/equip/regist", async (req, res) => {
+  const serial = req.body['serial'];
+  const branch_check = req.body['branch_check'];
+  const boarding_location = req.body['boarding_location'];
+  // const prs = req.body['pressure'];
+  const locationx = req.body.location['x'];
+  const locationy = req.body.location['y'];
+  const map = req.body['map'];
+  console.log("/equip/regist");
+  try {
+    const connection = await DB.getConnection();
+    const insert = await connection.query(
+      "INSERT INTO Equip_info(serial,branch_check,location_x,location_y,boarding_location,map) VALUES (?,?,?,?,?,?);",
+      [serial, branch_check, locationx, locationy, boarding_location, map]
+    );
+    res.status(201).json({
+      message: "Success"
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: "error"
+    });
+    console.log(err)
+  }
+});//소화기 정보 입력 api
+app.post("/equip/update", async (req, res) => {
   const serial = req.body['serial'];
   const boarding_location = req.body['boarding_location'];
   const prs = req.body['pressure'];
@@ -241,7 +273,7 @@ app.post("/equip/insert", async (req, res) => {
     });
     console.log(err)
   }
-});//소화기 정보 입력 api
+});//소화기 정보 수정 api
 app.get("/equip/check", async (req, res) => {
   const Eq_id = req.query.Eq_id;
   const connection = await DB.getConnection();
@@ -279,6 +311,7 @@ app.post("/equip/check/insert", async (req, res) => {
   // const Eq_id = req.body['equip_id'];
   const user = req.body['user'];
   const pressure = req.body['prs'];
+  const res_ = req.body['check_res'];
   console.log("/equip/check/insert");
   try {
     const connection = await DB.getConnection();
@@ -286,7 +319,7 @@ app.post("/equip/check/insert", async (req, res) => {
       'SELECT * FROM Equip_info WHERE serial = ?;', [serial]);
     const result = search[0][0]['id'];
     const select = await connection.query(
-      'INSERT INTO Check_Log(equip_id,date,user,prs) VALUES(?,now(),?,?);', [result, user, pressure]);
+      'INSERT INTO Check_Log(equip_id,date,check_res,user,prs) VALUES(?,now(),?,?,?);', [result, res_, user, pressure]);
     res.status(201).json({
       message: "Success"
     });
@@ -400,22 +433,24 @@ app.post('/upload/fet', upload.single('img'), async (req, res) => {
     console.log(err)
   }
 });//소화기 사진 업로드 및 DB입력
-app.post('/upload/map', upload.single('img'), async (req, res) => {
-  const img = req.file.originalname;
-  const map = req.body['name'];
-  console.log("/upload/map");
-  try {
-    const connection = await DB.getConnection();
-    const update = await connection.query('INSERT INTO Map(name, image) VALUES(?,?)', [map, img]);
-    res.status(201).json({
-      message: "Success"
-    });
-  } catch (err) {
-    res.status(400).json({
-      message: "error"
-    });
-    console.log(err)
-  }
+app.post('/upload/map', /*upload.single('img')*/async (req, res) => {
+  console.log("/upload/map")
+  console.log(req.body, req.file, req.files, req)
+  // // const img = req.file.originalname;
+  // // const map = req.body['name'];
+  // // console.log("/upload/map");
+  //  try {
+  // //   const connection = await DB.getConnection();
+  // //   const update = await connection.query('INSERT INTO Map(name, image) VALUES(?,?)', [map, img]);
+  // //   res.status(201).json({
+  // //     message: "Success"
+  // //   });
+  // } catch (err) {
+  //   res.status(400).json({
+  //     message: "error"
+  //   });
+  //   console.log(err)
+  // }
 });//맵 사진 업로드 및 DB입력
 app.post('/update/map', upload.single('img'), async (req, res) => {
   const img = req.file.originalname;
@@ -433,16 +468,16 @@ app.post('/update/map', upload.single('img'), async (req, res) => {
     });
   }
 });//맵 사진 수정
-app.post('/delete/map', upload.single('img'), async (req, res) => {
-  const img = req.file.originalname;
-  const map = req.body['name'];
+app.post('/delete/map', async (req, res) => {
+  const map_id = req.body['map_id'];
   console.log("/delete/map");
   try {
     const connection = await DB.getConnection();
-    const update = await connection.query('UPDATE Map SET image = ? WHERE name =?', [img, map]);
-    res.status(201).json({
-      message: "Success"
-    });
+    const seatch = await connection.query('DELETE Map WHERE image = ?', [map_id]);
+    const filepath =
+      res.status(201).json({
+        message: "Success"
+      });
   } catch (err) {
     res.status(400).json({
       message: err,
@@ -490,7 +525,11 @@ app.get('/download/fet', async (req, res) => {
   }
 });//소화기 이미지 다운로드
 
-
+app.post(['/upload2', '/upload3'], upload.any(), (req, res) => {
+  console.log(req.body);
+  console.log(req.files);
+  res.send("hello world");
+});
 
 const server = app.listen(3001, function () {
   const host = server.address().address;
@@ -513,5 +552,4 @@ app.use(function (err, req, res, next) {
   res.json("error code 502!!!");
 });
 module.exports = app;
-
 
