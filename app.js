@@ -14,8 +14,8 @@ const DB = mysql.createPool({
   host: "127.0.0.1",
   port: 3306,
   user: "root",
-  password: "1234",
-  database: "cando",
+  password: "doublefloat",
+  database: "equipment",
   dateStrings: "date",
   multipleStatements: true,
 });
@@ -81,10 +81,12 @@ app.get("/equip/list", async (req, res) => {
   console.log("/equip/list");
   const connection = await DB.getConnection();
   try {
-    const select = await connection.query("SELECT * FROM Equip_Info;");
+    const select = await connection.query("SELECT * FROM Equip_info;");
     //await connection.release.end();
     let i = 0;
     let data = [];
+    let maxprs = "-1";
+    maxprs = parseInt(maxprs);
     while (1) {
       if (select[0][i] == null) {
         break;
@@ -107,7 +109,8 @@ app.get("/equip/list", async (req, res) => {
         image: image,
         boarding_location: boarding_location,
         map: map,
-        QR: QR;
+        QR: QR,
+        maxprs: maxprs
       };
       data.push(results);
       i = i + 1;
@@ -136,7 +139,7 @@ app.get("/equip/list_sax", async (req, res) => {
       "select equip_id, prs from Check_Log where (equip_id, id) in (select equip_id, MAX(id) from Check_Log group by equip_id);"
     );
     const where1 = where[0];
-    res.status(201).send();
+    res.status(201).json(where1);
     return;
   } catch (err) {
     res.status(400).json({
@@ -483,7 +486,6 @@ app.post("/login", async (req, res) => {
     });
     console.log(err);
   } finally {
-    console.log("커넥션 반");
     connection.release();
   }
 }); //로그인api
